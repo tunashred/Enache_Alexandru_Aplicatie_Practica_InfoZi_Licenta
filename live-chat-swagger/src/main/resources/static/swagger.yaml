@@ -1,0 +1,295 @@
+openapi: 3.0.1
+info:
+  title: Kafka Swagger API
+  description: Demo to simulate live chat API calls
+  version: 1.0.0
+servers:
+  - url: http://localhost:7000
+
+tags:
+  - name: Client API
+    description: Operations related to clients
+  - name: Streamer API
+    description: Operations related to streamers
+  - name: Manager API
+    description: Operations related to manager
+paths:
+  /client/produce:
+    post:
+      summary: Produce a client message
+      tags:
+        - Client API
+      parameters:
+        - name: channel
+          in: query
+          description: Channel name
+          required: true
+          schema:
+            type: string
+        - name: username
+          in: query
+          description: Your username
+          required: true
+          schema:
+            type: string
+        - name: message
+          in: query
+          description: Message to send
+          required: true
+          schema:
+            type: string
+      responses:
+        "201":
+          description: Message sent successfully
+  /client/consume:
+    post:
+      summary: Consume client message
+      tags:
+        - Client API
+      parameters:
+        - name: channel
+          in: query
+          description: Channel to consume from
+          required: true
+          schema:
+            type: string
+        - name: username
+          in: query
+          description: Your username
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Messages consumed successfully
+        "204":
+          description: No new messages available
+
+
+  /streamer/list-packs:
+    get:
+      summary: Show available packs
+      tags:
+        - Streamer API
+      responses:
+        "200":
+          description: Packs fetched successfully
+        "204":
+          description: No packs available
+
+  /streamer/add-pack:
+    post:
+      summary: Add pack to streamer preferences
+      tags:
+        - Streamer API
+      parameters:
+        - name: streamer
+          in: query
+          description: Target streamer
+          required: true
+          schema:
+            type: string
+        - name: pack
+          in: query
+          description: Pack to add
+          required: true
+          schema:
+            type: string
+      responses:
+        "201":
+          description: Pack added successfully
+        "400":
+          description: Failed to add pack
+
+  /streamer/remove-pack:
+    post:
+      summary: Remove a pack from streamer preferences
+      tags:
+        - Streamer API
+      parameters:
+        - name: streamer
+          in: query
+          description: Target streamer
+          required: true
+          schema:
+            type: string
+        - name: pack
+          in: query
+          description: Pack to remove
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Pack removed successfully
+        "400":
+          description: Failed to remove pack
+
+  /manager/list-packs:
+    get:
+      summary: Add a new banned word to a certain pack
+      tags:
+        - Manager API
+      responses:
+        "200":
+          description: Packs fetched successfully
+        "204":
+          description: No packs available
+
+  /manager/search-word:
+    get:
+      summary: Search a word through all the available packs
+      tags:
+        - Manager API
+      parameters:
+        - name: text
+          in: query
+          required: true
+          description: Word to search
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Packs interrogated and retrieved matches
+        "204":
+          description: Packs interrogated and no matches were found
+
+  /manager/get-pack:
+    get:
+      summary: Get a list of a pack's contents
+      tags:
+        - Manager API
+      parameters:
+        - name: text
+          in: query
+          required: true
+          description: Pack name
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Pack contents fetched
+        "204":
+          description: The pack does not exist or it is empty
+
+  /manager/create-pack:
+    post:
+      summary: Create a new pack by uploading a file
+      tags:
+        - Manager API
+      requestBody:
+          required: true
+          content:
+            multipart/form-data:
+              schema:
+                type: object
+                properties:
+                  file:
+                    type: string
+                    format: binary
+      parameters:
+        - name: topic
+          in: query
+          required: true
+          description: Name of new pack
+          schema:
+            type: string
+      responses:
+        "201":
+          description: Pack created successfully
+        "400":
+          description: Failed to create pack
+
+  /manager/add-word:
+    post:
+      summary: Add a new word to a certain pack
+      tags:
+        - Manager API
+      parameters:
+        - name: pack
+          in: query
+          required: true
+          description: Pack name
+          schema:
+            type: string
+        - name: word
+          in: query
+          required: true
+          description: New word
+          schema:
+            type: string
+      responses:
+        "201":
+          description: Word added
+        "400":
+          description: Failed to add word
+
+  /manager/add-words:
+    post:
+      summary: Add words from a file to a certain pack
+      tags:
+        - Manager API
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                file:
+                  type: string
+                  format: binary
+      parameters:
+        - name: topic
+          in: query
+          required: true
+          description: Pack name
+          schema:
+            type: string
+      responses:
+        "201":
+          description: Words added
+        "400":
+          description: Failed to add words
+
+  /manager/delete-word:
+    post:
+      summary: Remove a word from a certain pack
+      tags:
+        - Manager API
+      parameters:
+        - name: pack
+          in: query
+          required: true
+          description: Pack name
+          schema:
+            type: string
+        - name: word
+          in: query
+          required: true
+          description: Remove word
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Word removed
+        "400":
+          description: Failed to remove word
+
+  /manager/delete-pack:
+    post:
+      summary: Delete pack
+      tags:
+        - Manager API
+      parameters:
+        - name: text
+          in: query
+          required: true
+          description: Pack name
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Pack deleted
+        "400":
+          description: Failed to delete pack
