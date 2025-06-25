@@ -1,0 +1,191 @@
+groups:
+  - name: kafka_alerts
+    rules:
+      - alert: Under-replicated partitions
+        expr: kafka_topic_partition_under_replicated_partition > 0
+        for: 2m
+        labels:
+          severity: critical
+          service: kafka
+        annotations:
+          summary: "Under replicated partitions detected"
+          description: "Topic {{ $labels.topic }} has {{ $value }} under-replicated partitions on broker {{ $labels.instance }}"
+
+      - alert: Offline partitions
+        expr: kafka_controller_offline_partitions_count > 0
+        for: 1m
+        labels:
+          severity: critical
+          service: kafka
+        annotations:
+          summary: "Offline partitions detected"
+          description: "Kafka cluster has {{ $value }} offline partitions on controller {{ $labels.instance }}"
+
+      - alert: Consumer group lag rate high
+        expr: |
+          (
+            rate(kafka_consumer_group_lag_sum[5m]) / 
+            rate(kafka_topic_partition_current_offset[5m])
+          ) > 0.5
+        for: 5m
+        labels:
+          severity: warning
+          service: kafka
+        annotations:
+          summary: "Consumer group lag rate is too high"
+          description: "Consumer group {{ $labels.group }} on topic {{ $labels.topic }} has a lag increase rate of {{ $value | humanizePercentage }} compared to offset increase rate, indicating processing issues"
+
+      - alert: Consumer group high lag
+        expr: kafka_consumer_group_lag > 10000
+        for: 3m
+        labels:
+          severity: warning
+          service: kafka
+        annotations:
+          summary: "Kafka consumer group high lag"
+          description: "Consumer group {{ $labels.group }} has high lag of {{ $value }} messages on topic {{ $labels.topic }} partition {{ $labels.partition }}"
+
+  - name: system_resources
+    rules:
+      - alert: High CPU usage
+        expr: |
+          (
+            1 - (avg by (instance) (irate(node_cpu_seconds_total{mode="idle"}[5m])))
+          ) > 0.8
+        for: 5m
+        labels:
+          severity: warning
+          service: system
+        annotations:
+          summary: "High CPU usage detected"
+          description: "CPU usage is above 80% on instance {{ $labels.instance }} (current value: {{ $value | humanizePercentage }})"
+
+      - alert: Critical CPU usage
+        expr: |
+          (
+            1 - (avg by (instance) (irate(node_cpu_seconds_total{mode="idle"}[5m])))
+          ) > 0.95
+        for: 2m
+        labels:
+          severity: critical
+          service: system
+        annotations:
+          summary: "Critical CPU usage detected"
+          description: "CPU usage is above 95% on instance {{ $labels.instance }} (current value: {{ $value | humanizePercentage }})"
+
+      - alert: High memory usage
+        expr: |
+          (
+            (node_memory_MemTotal_bytes - node_memory_MemAvailable_bytes) / 
+            node_memory_MemTotal_bytes
+          ) > 0.8
+        for: 5m
+        labels:
+          severity: warning
+          service: system
+        annotations:
+          summary: "High memory usage detected"
+          description: "Memory usage is above 80% on instance {{ $labels.instance }} (current value: {{ $value | humanizePercentage }})"
+
+      - alert: Critical memory usage
+        expr: |
+          (
+            (node_memory_MemTotal_bytes - node_memory_MemAvailable_bytes) / 
+            node_memory_MemTotal_bytes
+          ) > 0.95
+        for: 2m
+        labels:
+          severity: critical
+          service: system
+        annotations:
+          summary: "Critical memory usage detected"
+          description: "Memory usage is above 95% on instance {{ $labels.instance }} (current value: {{ $value | humanizePercentage }})"
+
+      - alert: High disk usage
+        expr: |
+          (
+            (node_filesystem_size_bytes{fstype!="tmpfs",fstype!="overlay",fstype!="squashfs"} - 
+             node_filesystem_avail_bytes{fstype!="tmpfs",fstype!="overlay",fstype!="squashfs"}) / 
+            node_filesystem_size_bytes{fstype!="tmpfs",fstype!="overlay",fstype!="squashfs"}
+          ) > 0.8
+        for: 5m
+        labels:
+          severity: warning
+          service: system
+        annotations:
+          summary: "High disk usage detected"
+          description: "Disk usage is above 80% on {{ $labels.instance }} at mountpoint {{ $labels.mountpoint }} (current value: {{ $value | humanizePercentage }})"
+
+      - alert: Critical disk usage
+        expr: |
+          (
+            (node_filesystem_size_bytes{fstype!="tmpfs",fstype!="overlay",fstype!="squashfs"} - 
+             node_filesystem_avail_bytes{fstype!="tmpfs",fstype!="overlay",fstype!="squashfs"}) / 
+            node_filesystem_size_bytes{fstype!="tmpfs",fstype!="overlay",fstype!="squashfs"}
+          ) > 0.95
+        for: 2m
+        labels:
+          severity: critical
+          service: system
+        annotations:
+          summary: "Critical disk usage detected"
+          description: "Disk usage is above 95% on {{ $labels.instance }} at mountpoint {{ $labels.mountpoint }} (current value: {{ $value | humanizePercentage }})"
+
+      # - alert: RootPartitionHighUsage
+        # expr: |
+          # (
+            # (node_filesystem_size_bytes{mountpoint="/"} -
+             # node_filesystem_avail_bytes{mountpoint="/"}) /
+            # node_filesystem_size_bytes{mountpoint="/"}
+          # ) > 0.95
+        # for: 3m
+        # labels:
+          # severity: critical
+          # service: system
+        # annotations:
+          # summary: "Root partition disk usage critical"
+          # description: "Root partition (/) usage is above 85% on {{ $labels.instance }} (current value: {{ $value | humanizePercentage }})"
+
+  - name: kafka_broker_health
+    rules:
+      - alert: Kafka broker down
+        expr: up{job="kafka"} == 0
+        for: 1m
+        labels:
+          severity: critical
+          service: kafka
+        annotations:
+          summary: "Kafka broker is down"
+          description: "Kafka broker {{ $labels.instance }} is down"
+
+      - alert: Kafka exporter down
+        expr: up{job="kafka-exporter"} == 0
+        for: 2m
+        labels:
+          severity: warning
+          service: kafka
+        annotations:
+          summary: "Kafka exporter is down"
+          description: "Kafka exporter {{ $labels.instance }} is not responding"
+
+  - name: system_health
+    rules:
+      - alert: Node Exporter down
+        expr: up{job="node"} == 0
+        for: 2m
+        labels:
+          severity: warning
+          service: system
+        annotations:
+          summary: "Node exporter is down"
+          description: "Node exporter on {{ $labels.instance }} is not responding"
+
+      - alert: High system load
+        expr: node_load15 / count by (instance) (node_cpu_seconds_total{mode="idle"}) > 1.5
+        for: 5m
+        labels:
+          severity: warning
+          service: system
+        annotations:
+          summary: "High system load average"
+          description: "15-minute load average is {{ $value }} on {{ $labels.instance }}"
