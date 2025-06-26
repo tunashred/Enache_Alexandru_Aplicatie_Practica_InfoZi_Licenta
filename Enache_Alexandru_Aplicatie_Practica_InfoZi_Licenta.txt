@@ -1,0 +1,61 @@
+Link repository: https://github.com/tunashred/Enache_Alexandru_Aplicatie_Practica_InfoZi_Licenta
+
+Repository-ul contine:
+- toate modulele suitei
+- fisierele de configurare pentru modulele care folosesc Kafka
+- fisierele de configurare pentru ZooKeeper si 3 brokeri
+- certificatele SSL
+- certificat CA
+- fisier configurare OpenSSL
+- fisier configurare Prometheus + alerte
+- fisier docker-compose pentru rulare RedPanda
+
+Proiectul este agnostic de sistemul de operare, dar a fost rulat si testat doar pe Linux.
+Majoritatea fisierelor de configurare din module necesita modificarea lor pentru a seta adresele IP corecte (ale calculatorului pe care se ruleaza) si calea catre directoarele log sau certificate.
+Daca nu se doreste folosirea autentificarii cu SSL, atunci se vor sterge sau comenta toate proprietatile care contin 'ssl' din configuratiile ZooKeeper si broker. In plus, brokerii si zookeeper vor comunica pe porturi PLAINTEXT, si fiecare client care se conecteaza la cluster se va conecta la brokeri tot prin portul PLAINTEXT.
+
+Pachete necesare pentru descarcare:
+Apache Kafka (versiunea 3.9.0) - https://kafka.apache.org/downloads
+
+Prometheus (versiunea 3.4.1) - https://prometheus.io/download/
+
+Node exporter (versiunea 1.9.1) - https://prometheus.io/download/
+
+Kafka exporter (versiunea 1.9.0) - https://github.com/danielqsj/kafka_exporter/releases
+
+Este indeajuns ca toate pachetele descarcate sa fie doar dezarhivate.
+
+
+Pasi de instalare si rulare:
+1. Rulare Cluster
+    Pornirea fiecarei instante se face in cate un terminal separat
+    a. Pornire instanta ZooKeeper:
+    <pachet_kafka>/bin/zookeeper-server-start.sh <cale zoo.cfg>
+
+    b. Pornire instante brokeri:
+    <pachet_kafka>/bin/kafka-server-start.sh <cale server.properties.1>
+    <pachet_kafka>/bin/kafka-server-start.sh <cale server.properties.2>
+    <pachet_kafka>/bin/kafka-server-start.sh <cale server.properties.3>
+
+2. Exportare metrici
+    Pornirea fiecarei instante se face in cate un terminal separat
+    a. Pornire Prometheus:
+    <pachet prometheus>prometheus --config.file=<cale prometheus.yaml>
+
+    b. Pornire Kafka Exporter:
+    <pachet kafka exporter>kafka_exporter --kafka.server=<ip - broker 1>:<port> --kafka.server=<ip - broker 2>:<port> --kafka.server=<ip - broker 3>:<port> --kafka.version=3.9.0 --tls.enabled --tls.ca-file=<cale ca.pem> --tls.cert-file=<cale kafka-client.pem> --tls.key-file=<cale kafka-client-key.pem> --web.listen-address=:9091
+
+    c. Pornire Node exporter:
+    <pachet node exporter>node_exporter
+
+3. Instalare dependinte suita
+    Pe parcursul proiectului s-au folosit extensiv IntelliJ si uneltele sale, deci acest ghid va contine pasii corespunzatori IntelliJ.
+
+    Se deschid pe rand modulele live-chat-dto, live-chat-private-dto, live-chat-admin, live-chat-manager, live-chat-streamer si se instaleaza modulele folosind optiunea Maven.
+
+4. Rulare
+    Mentiune: Daca toate instantele din infrastructura sunt rulate pe acelasi calculator, atunci ar fi indeajuns de a rula o singura instanta de moderator.
+
+    a. Moderatorul poate fi rulat din IntelliJ sau poate de asemenea sa fie instalat ca celelalte module si sa fie rulat binarul .jar compilat.
+
+    b. Pentru a rula aplicatia Swagger-UI, se ruleaza din IntelliJ si se acceseaza in browser pe localhost:<port>
